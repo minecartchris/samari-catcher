@@ -56,10 +56,17 @@ type ComputerState = {
 };
 
 export const windowTitle = (id: number | null, label: string | null) => {
+<<<<<<< HEAD
   if (id === null && label === null) return "Samari Catcher";
   if (id === null) return `${label} | Samari Catcher`;
   if (label === null) return `Computer #${id} | Samari Catcher`;
   return `${label} (Computer #${id}) | Samari Catcher`;
+=======
+  if (id === null && label === null) return "Samurai Catcher";
+  if (id === null) return `${label} | Samurai Catcher`;
+  if (label === null) return `Computer #${id} | Samurai Catcher`;
+  return `${label} (Computer #${id}) | Samurai Catcher`;
+>>>>>>> e070476 (fuck git man)
 };
 
 export class Computer extends Component<ComputerProps, ComputerState> implements ComputerActionable {

@@ -31,9 +31,15 @@ export const TokenDisplay = ({ token }: TokenDisplayProps) =>
       {genSetup(token)}
     </div>
     <div class={infoDescription}>
+<<<<<<< HEAD
       <h3>What is Samari Catcher?</h3>
       <p>
         Samari Catcher is a web terminal for ComputerCraft, allowing you to
+=======
+      <h3>What is Samurai Catcher?</h3>
+      <p>
+        Samurai Catcher is a web terminal for ComputerCraft, allowing you to
+>>>>>>> e070476 (fuck git man)
         interact with any in-game computer in the browser, as well as edit files
         remotely!
       </p>

@@ -8,4 +8,8 @@ desktop/target/
 desktop/target/*
 
 desktop/target/debug/samari_catcher_desktop.pdb
+<<<<<<< HEAD
 desktop/target/debug/samari-catcher-desktop.exe
+=======
+desktop/target/debug/samari-catcher-desktop.exe
+>>>>>>> e070476 (fuck git man)

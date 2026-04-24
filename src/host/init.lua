@@ -345,6 +345,11 @@ while ok and (not co or coroutine.status(co) ~= "dead") do
           elseif event.name == "cloud_catcher_key_up" then
               local key = keys[event.args[1]]
               if type(key) == "number" then push_event { n = 2, "key_up", key } end
+<<<<<<< HEAD
+=======
+          elseif event.name == "char" then
+              push_event { n = 2, "char", event.args[1] }
+>>>>>>> e070476 (fuck git man)
           else
             push_event(table.pack(event.name, table.unpack(event.args)))
           end

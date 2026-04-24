@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # Samari Catcher
+=======
+# Samurai Catcher
+>>>>>>> e070476 (fuck git man)
 
 A web interface for ComputerCraft computers
 
