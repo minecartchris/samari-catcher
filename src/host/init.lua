@@ -186,7 +186,7 @@ do
     end
   }
 
-  shell.setAlias("cloud", "/" .. current_path)
+  shell.setAlias("samari", "/" .. current_path)
 
   local function complete_multi(text, options)
     local results = {}
@@ -458,7 +458,7 @@ end
 
 -- Clear our ugly completion hacks
 _G.cloud_catcher = nil
-shell.clearAlias("cloud")
+shell.clearAlias("samari")
 shell.getCompletionInfo()[current_path] = nil
 
 if remote ~= nil then remote.close() end

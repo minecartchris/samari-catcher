@@ -16,7 +16,7 @@
     "cloud-catcher": "_bin/server.cjs"
   },
   "config": {
-    "server": "cloud-catcher.squiddev.cc"
+    "server": "cc.minecartchris.cc"
   },
   "files": [
     "_bin",

@@ -360,5 +360,5 @@ if (process.env.LISTEN_PID) {
   if (port != port) throw new Error(`Cannot parse port from CLOUD_CATCHER_PORT=${process.env.CLOUD_CATCHER_PORT}`)
 
   console.log(`Listening on ${port}`);
-  server.listen({ host: "localhost", port, });
+  server.listen({ port, });
 }

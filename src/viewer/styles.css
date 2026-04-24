@@ -15,6 +15,12 @@
   --color-error: #ffb6b6;
   --color-warn: #f9982f;
   --color-ok: #2dff31;
+
+  --color-tabbar-background: #d8d8d8;
+  --color-tab-background: #ececec;
+  --color-tab-hover: #e0e0e0;
+  --color-tab-active: #fff;
+  --color-tab-border: #c8c8c8;
 }
 
 [data-theme="dark"] {
@@ -34,6 +40,12 @@
   --color-error: #670000;
   --color-warn: #f9982f;
   --color-ok: #2dff31;
+
+  --color-tabbar-background: #252526;
+  --color-tab-background: #2d2d30;
+  --color-tab-hover: #3e3e42;
+  --color-tab-active: #1e1e1e;
+  --color-tab-border: #1e1e1e;
 }
 
 body {
@@ -50,6 +62,119 @@ html, body, .container, :global(.container) {
   margin: 0px;
   padding: 0px;
   border: none;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  background-color: var(--color-tabbar-background);
+  flex-shrink: 0;
+  height: 32px;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-tab-border);
+}
+
+.tabEntry {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  cursor: pointer;
+  background-color: var(--color-tab-background);
+  border-right: 1px solid var(--color-tab-border);
+  max-width: 220px;
+  color: var(--color-text);
+  font-size: 0.85em;
+  user-select: none;
+}
+
+.tabEntry:hover {
+  background-color: var(--color-tab-hover);
+}
+
+.tabEntry.tabActive, .tabEntry.tabActive:hover {
+  background-color: var(--color-tab-active);
+}
+
+.tabLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.tabClose {
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 3px;
+  color: var(--color-tinytext);
+}
+
+.tabClose:before {
+  content: "\2715";
+  font-size: 0.85em;
+}
+
+.tabClose:hover {
+  background-color: rgba(128, 128, 128, 0.25);
+  color: var(--color-text);
+}
+
+.tabNewButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  cursor: pointer;
+  font-size: 1.2em;
+  color: var(--color-text);
+  user-select: none;
+}
+
+.tabNewButton:hover {
+  background-color: var(--color-tab-hover);
+}
+
+.tokenButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 0.85em;
+  color: var(--color-text);
+  background-color: var(--color-tab-background);
+  border-left: 1px solid var(--color-tab-border);
+  user-select: none;
+}
+
+.tokenButton:hover {
+  background-color: var(--color-tab-hover);
+}
+
+.sessionHost {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.sessionHost > div {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sessionHidden {
+  display: none !important;
 }
 
 pre, code {

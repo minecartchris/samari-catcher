@@ -40,6 +40,7 @@ export type ComputerProps = {
   focused: boolean,
   token: Token,
   settings: Settings,
+  onInfo?: (info: { id: number | null, label: string | null }) => void,
 };
 
 type ComputerState = {
@@ -54,11 +55,11 @@ type ComputerState = {
   label: string | null,
 };
 
-const windowTitle = (id: number | null, label: string | null) => {
-  if (id === null && label === null) return "Cloud Catcher";
-  if (id === null) return `${label} | Cloud Catcher`;
-  if (label === null) return `Computer #${id} | Cloud Catcher`;
-  return `${label} (Computer #${id}) | Cloud Catcher`;
+export const windowTitle = (id: number | null, label: string | null) => {
+  if (id === null && label === null) return "Samari Catcher";
+  if (id === null) return `${label} | Samari Catcher`;
+  if (label === null) return `Computer #${id} | Samari Catcher`;
+  return `${label} (Computer #${id}) | Samari Catcher`;
 };
 
 export class Computer extends Component<ComputerProps, ComputerState> implements ComputerActionable {
@@ -84,11 +85,13 @@ export class Computer extends Component<ComputerProps, ComputerState> implements
 
   public componentWillUnmount() {
     this.props.events.detach(this.onPacket);
-    document.title = windowTitle(null, null);
   }
 
-  public componentDidUpdate() {
-    document.title = windowTitle(this.state.id, this.state.label);
+  public componentDidUpdate(_prevProps: ComputerProps, prevState: ComputerState) {
+    if (this.props.onInfo &&
+        (prevState.id !== this.state.id || prevState.label !== this.state.label)) {
+      this.props.onInfo({ id: this.state.id, label: this.state.label });
+    }
   }
 
   public render(
