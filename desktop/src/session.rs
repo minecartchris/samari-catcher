@@ -63,6 +63,10 @@ pub struct TerminalState {
     pub cursor_blink: bool,
     pub cursor_fore: String,
     pub cursor_back: String,
+    /// Palette from the host, keyed by single-char index ("0".."f"), value is
+    /// a packed 0x00RRGGBB int. `None` until the first `TerminalContents`
+    /// packet lands — renderers should fall back to `terminal_font::default_palette`.
+    pub palette: Option<std::collections::HashMap<String, u32>>,
 }
 
 impl Default for TerminalState {
@@ -78,6 +82,7 @@ impl Default for TerminalState {
             cursor_blink: true,
             cursor_fore: "#ffffff".into(),
             cursor_back: "#000000".into(),
+            palette: None,
         }
     }
 }
@@ -377,15 +382,29 @@ impl Session {
         Ok(())
     }
 
-    pub fn send_key_event(&self, name: &str, args: Vec<serde_json::Value>) {
+    /// Send a keyDown for `key_name` (CC key identifier such as `"enter"` or
+     /// `"a"`). `repeat` is true for auto-repeat events.
+    pub fn send_key_event(&self, key_name: &str, repeat: bool) {
         let packet = Packet::TerminalEvents {
             events: vec![protocol::TerminalEvent {
                 name: "cloud_catcher_key".to_string(),
-                args,
+                args: vec![key_name.into(), repeat.into()],
             }],
         };
         if let Err(e) = self.send(&packet) {
-            log::warn!("failed to send key event: {}", e);
+            log::warn!("failed to send key event: {e}");
+        }
+    }
+
+    pub fn send_key_up(&self, key_name: &str) {
+        let packet = Packet::TerminalEvents {
+            events: vec![protocol::TerminalEvent {
+                name: "cloud_catcher_key_up".to_string(),
+                args: vec![key_name.into()],
+            }],
+        };
+        if let Err(e) = self.send(&packet) {
+            log::warn!("failed to send key up: {e}");
         }
     }
 
@@ -397,7 +416,7 @@ impl Session {
             }],
         };
         if let Err(e) = self.send(&packet) {
-            log::warn!("failed to send char: {}", e);
+            log::warn!("failed to send char: {e}");
         }
     }
 
@@ -461,6 +480,10 @@ impl Session {
         // Cursor colors
         t.cursor_fore = contents.cur_fore.unwrap_or_else(|| "#ffffff".into());
         t.cursor_back = contents.cur_back.unwrap_or_else(|| "#000000".into());
+
+        if let Some(pal) = contents.palette {
+            t.palette = Some(pal);
+        }
     }
 
     #[allow(dead_code)]

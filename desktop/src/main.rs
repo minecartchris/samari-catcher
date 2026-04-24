@@ -4,6 +4,8 @@ mod protocol;
 mod session;
 mod settings;
 mod storage;
+mod syntax;
+mod terminal_font;
 mod token;
 mod ui;
 

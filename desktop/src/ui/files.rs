@@ -115,12 +115,25 @@ pub fn show(session: &mut Session, settings: &Settings, ui: &mut Ui) -> FilesAct
         });
         ui.separator();
 
+        // Syntax-highlighted editor. egui calls our layouter whenever the
+        // buffer changes, so highlighting stays live without extra plumbing.
+        let font_id = FontId::monospace(settings.font_size);
+        let dark = settings.dark_mode;
+        let file_name_for_syntax = file.name.clone();
+        let mut layouter = move |ui: &egui::Ui, text: &str, wrap_width: f32| {
+            let job = crate::syntax::highlight(
+                text, &file_name_for_syntax, dark, font_id.clone(), wrap_width,
+            );
+            ui.fonts(|f| f.layout_job(job))
+        };
+
         let text_edit = egui::TextEdit::multiline(&mut file.buffer)
             .font(FontId::monospace(settings.font_size))
             .code_editor()
             .desired_width(f32::INFINITY)
             .desired_rows(24)
-            .interactive(!file.read_only);
+            .interactive(!file.read_only)
+            .layouter(&mut layouter);
 
         ScrollArea::vertical()
             .auto_shrink([false; 2])
