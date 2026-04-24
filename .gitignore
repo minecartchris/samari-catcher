@@ -2,4 +2,10 @@
 /result
 /src/viewer/styles.css.d.ts
 /node_modules
-/deploy,sh
+/deploy.sh
+desktop.tar.gz
+desktop/target/
+desktop/target/*
+
+desktop/target/debug/samari_catcher_desktop.pdb
+desktop/target/debug/samari-catcher-desktop.exe
