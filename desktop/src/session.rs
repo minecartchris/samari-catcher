@@ -122,6 +122,33 @@ pub struct Notification {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NotificationKind { Ok, Warn, Error }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AiStatus {
+    Idle,
+    Running,
+    Error(String),
+}
+
+impl Default for AiStatus {
+    fn default() -> Self { AiStatus::Idle }
+}
+
+#[derive(Default)]
+pub struct AiState {
+    /// Free-form instruction the user types into the agent panel.
+    pub prompt: String,
+    pub status: AiStatus,
+    /// Most recent successful response, awaiting Apply / Discard.
+    pub last_result: Option<String>,
+    /// Channel the running task delivers its result on. Drained from `pump`.
+    rx: Option<std_mpsc::Receiver<AiResult>>,
+}
+
+pub enum AiResult {
+    Ok(String),
+    Err(String),
+}
+
 pub struct Session {
     pub token: Token,
     pub status: SessionStatus,
@@ -130,10 +157,16 @@ pub struct Session {
     pub active_file: Option<String>,
     pub notifications: Vec<Notification>,
     pub terminal: TerminalState,
+    pub ai: AiState,
 
     inbound_rx: std_mpsc::Receiver<SessionEvent>,
     outbound_tx: tokio_mpsc::UnboundedSender<String>,
     _task: JoinHandle<()>,
+
+    /// Held so the AI agent can spawn its own tokio tasks on the same runtime
+    /// the WS task uses, and so the task can wake the UI on completion.
+    runtime: Handle,
+    egui_ctx: egui::Context,
 
     /// Set once we've seen a host peer in a ConnectionUpdate. Used to decide
     /// whether to render the "lost connection" vs "waiting for computer" view.
@@ -152,7 +185,7 @@ impl Session {
         let (in_tx, in_rx) = std_mpsc::channel();
         let (out_tx, out_rx) = tokio_mpsc::unbounded_channel();
 
-        let task = runtime.spawn(run_ws(url, in_tx, out_rx, egui_ctx));
+        let task = runtime.spawn(run_ws(url, in_tx, out_rx, egui_ctx.clone()));
 
         Self {
             token,
@@ -162,9 +195,12 @@ impl Session {
             active_file: None,
             notifications: Vec::new(),
             terminal: TerminalState::default(),
+            ai: AiState::default(),
             inbound_rx: in_rx,
             outbound_tx: out_tx,
             _task: task,
+            runtime: runtime.clone(),
+            egui_ctx,
             has_connected: false,
         }
     }
@@ -193,7 +229,79 @@ impl Session {
                 SessionEvent::Packet(p) => self.handle_packet(p),
             }
         }
+
+        // Drain the AI task channel — at most one completion per request.
+        let mut clear_rx = false;
+        if let Some(rx) = self.ai.rx.as_ref() {
+            if let Ok(result) = rx.try_recv() {
+                changed = true;
+                clear_rx = true;
+                match result {
+                    AiResult::Ok(text) => {
+                        self.ai.status = AiStatus::Idle;
+                        self.ai.last_result = Some(text);
+                    }
+                    AiResult::Err(msg) => {
+                        self.ai.status = AiStatus::Error(msg);
+                    }
+                }
+            }
+        }
+        if clear_rx { self.ai.rx = None; }
+
         changed
+    }
+
+    /// Spawn a non-streaming Ollama request on the runtime. The result lands
+    /// in `ai.last_result` (success) or `ai.status = Error(...)`. Pressing
+    /// Generate while a request is already running is a no-op.
+    pub fn start_ai_edit(
+        &mut self,
+        instruction: String,
+        file_name: &str,
+        file_contents: &str,
+        settings: &Settings,
+    ) {
+        if matches!(self.ai.status, AiStatus::Running) { return; }
+
+        let (tx, rx) = std_mpsc::channel();
+        self.ai.rx = Some(rx);
+        self.ai.status = AiStatus::Running;
+        self.ai.last_result = None;
+
+        let url = settings.ollama_url.clone();
+        let model = settings.ollama_model.clone();
+        let egui_ctx = self.egui_ctx.clone();
+
+        let system = "You are a code editor assistant for ComputerCraft Lua \
+            (and other languages where applicable). The user gives you the \
+            current contents of a file plus an instruction. Reply with the \
+            COMPLETE new contents of the file, with no commentary, no \
+            explanations, no markdown code fences. Only the literal file \
+            contents — anything else will be written into their file \
+            verbatim.";
+
+        let prompt = format!(
+            "File path: {file_name}\n\n\
+             === BEGIN current contents ===\n{file_contents}\n=== END current contents ===\n\n\
+             Instruction:\n{instruction}\n\n\
+             Reply with the new file contents only.",
+        );
+
+        self.runtime.spawn(async move {
+            let result = crate::ollama::generate(
+                crate::ollama::OllamaConfig { url: &url, model: &model },
+                &prompt,
+                Some(system),
+            )
+            .await;
+            let msg = match result {
+                Ok(text) => AiResult::Ok(text),
+                Err(e) => AiResult::Err(format!("{e:#}")),
+            };
+            let _ = tx.send(msg);
+            egui_ctx.request_repaint();
+        });
     }
 
     fn handle_packet(&mut self, p: Packet) {

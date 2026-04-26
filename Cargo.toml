@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["desktop"]
+
+# This top-level Cargo.toml exists only so `cargo install --git <repo>
+# samari-catcher-desktop` discovers the package. The web client (Node /
+# TypeScript / Lua) lives outside the workspace and is unaffected.
+
+# Cargo only honours [profile.*] at the workspace root — defining release
+# settings inside `desktop/Cargo.toml` produces a "profiles for the non
+# root package will be ignored" warning.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

@@ -20,6 +20,25 @@ pub fn show(settings: &mut Settings, ui: &mut Ui) -> bool {
                 .on_hover_text("Defaults to cc.minecartchris.cc; SAMARI_DEV=1 overrides to localhost:8080");
         });
 
+        ui.add_space(8.0);
+        ui.separator();
+        ui.label(egui::RichText::new("AI assistant (Ollama)").strong());
+        ui.label(
+            egui::RichText::new("Runs locally — start `ollama serve` and `ollama pull <model>` first.")
+                .small()
+                .weak(),
+        );
+        ui.horizontal(|ui| {
+            ui.label("Ollama URL");
+            ui.text_edit_singleline(&mut settings.ollama_url)
+                .on_hover_text("e.g. http://localhost:11434");
+        });
+        ui.horizontal(|ui| {
+            ui.label("Model");
+            ui.text_edit_singleline(&mut settings.ollama_model)
+                .on_hover_text("Tag of an installed Ollama model, e.g. qwen2.5-coder:7b");
+        });
+
         ui.separator();
         if ui.button("Close").clicked() { close = true; }
     });

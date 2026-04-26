@@ -2,6 +2,7 @@ use egui::{FontId, RichText, ScrollArea, Ui};
 
 use crate::session::{NotificationKind, Session, SessionStatus};
 use crate::settings::Settings;
+use crate::ui::ai_agent::{self, AiAction};
 
 pub enum FilesAction {
     Idle,
@@ -9,6 +10,14 @@ pub enum FilesAction {
     CloseFile(String),
     SelectFile(Option<String>),
     DismissNotification(String),
+    /// User clicked Generate in the AI panel; payload is the trimmed prompt.
+    AiGenerate(String),
+    /// Apply the AI panel's `last_result` to the active file's buffer.
+    AiApply,
+    /// Drop the AI panel's `last_result`.
+    AiDiscard,
+    /// Clear an Error state in the AI panel.
+    AiResetError,
 }
 
 /// Draw the file list sidebar + editor or welcome screen. Returns an action
@@ -85,6 +94,24 @@ pub fn show(session: &mut Session, settings: &Settings, ui: &mut Ui) -> FilesAct
                     });
                 }
             });
+        });
+
+    // Right-hand AI panel — sits between the file list and the editor in the
+    // layout tree. Show it before the central panel so it claims its width
+    // first.
+    egui::SidePanel::right("ai_agent_panel")
+        .resizable(true)
+        .default_width(280.0)
+        .min_width(220.0)
+        .show_inside(ui, |ui| {
+            let ai_action = ai_agent::show(session, settings, ui);
+            match ai_action {
+                AiAction::Idle => {}
+                AiAction::Generate(prompt) => action = FilesAction::AiGenerate(prompt),
+                AiAction::Apply => action = FilesAction::AiApply,
+                AiAction::Discard => action = FilesAction::AiDiscard,
+                AiAction::ResetError => action = FilesAction::AiResetError,
+            }
         });
 
     // Main area: editor for the active file, or a welcome screen.

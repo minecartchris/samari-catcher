@@ -64,6 +64,14 @@ pub fn show(session: &mut Session, ui: &mut Ui) {
     let (rect, resp) = ui.allocate_exact_size(Vec2::new(term_w, term_h), egui::Sense::click());
     if resp.clicked() { resp.request_focus(); }
 
+    // Auto-grab focus when the terminal view is visible and nothing else has
+    // it. Without this the user has to click the terminal once before any
+    // Enter / Backspace / Arrow press is forwarded — `ui.ctx().input()` reads
+    // the global event queue, but if a focused widget like a `selectable_value`
+    // button intercepts Enter at the focus layer, the terminal never sees it.
+    let nothing_focused = ui.memory(|m| m.focused().is_none());
+    if nothing_focused { resp.request_focus(); }
+
     let painter = ui.painter_at(rect);
 
     // Solid black backdrop first so any empty cells read as "off" regardless
@@ -142,10 +150,14 @@ pub fn show(session: &mut Session, ui: &mut Ui) {
     }
 
     // Keyboard input. Egui delivers both raw key events (useful for arrows,
-    // enter, etc.) and a `Text` event carrying printable characters.
-    ui.ctx().input(|input| {
-        for event in &input.events {
-            match event {
+    // enter, etc.) and a `Text` event carrying printable characters. We only
+    // forward when the terminal area itself has focus so that widgets above
+    // (token prompt, settings) keep their own keys; and we *consume* the
+    // events we forward so the same Enter / Backspace press doesn't also
+    // re-trigger a focused button on the view-switcher.
+    if resp.has_focus() {
+        ui.ctx().input_mut(|input| {
+            input.events.retain(|event| match event {
                 egui::Event::Key { key, pressed, repeat, .. } => {
                     if let Some(cc_name) = map_key_to_cc(*key) {
                         if *pressed {
@@ -153,19 +165,25 @@ pub fn show(session: &mut Session, ui: &mut Ui) {
                         } else {
                             session.send_key_up(cc_name);
                         }
+                        false
+                    } else {
+                        true
                     }
                 }
                 egui::Event::Text(text) => {
                     for ch in text.chars() {
+                        // Filter control codes; egui already routes Enter /
+                        // Backspace / etc. through the Key event above.
                         if ch >= ' ' && ch != '\x7f' {
                             session.send_char(ch);
                         }
                     }
+                    false
                 }
-                _ => {}
-            }
-        }
-    });
+                _ => true,
+            });
+        });
+    }
 }
 
 fn parse_css_color(s: &str) -> Option<Color32> {

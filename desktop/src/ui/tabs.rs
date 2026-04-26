@@ -132,6 +132,12 @@ pub fn token_prompt(ui: &mut Ui, buf: &mut String) -> TokenPromptOutcome {
             .desired_width(260.0)
             .hint_text("32-char alphanumeric token"));
 
+        // Grab focus the first time we render the prompt so the user can just
+        // start typing / paste without clicking the field first.
+        if !resp.has_focus() && ui.memory(|m| m.focused().is_none()) {
+            resp.request_focus();
+        }
+
         let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
         let submit = ui.button("Add").clicked() || enter;
         let cancel = ui.button("Cancel").clicked()

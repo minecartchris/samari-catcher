@@ -191,8 +191,7 @@ impl eframe::App for AppState {
                 MainView::Files => {
                     let settings = self.settings.clone();
                     let action = ui::files::show(session, &settings, ui);
-                    drop(settings);
-                    apply_files_action(session, action, self.settings.trim_whitespace_on_save);
+                    apply_files_action(session, action, &settings);
                 }
             }
         });
@@ -207,12 +206,16 @@ impl eframe::App for AppState {
     }
 }
 
-fn apply_files_action(session: &mut Session, action: ui::files::FilesAction, trim_ws: bool) {
+fn apply_files_action(
+    session: &mut Session,
+    action: ui::files::FilesAction,
+    settings: &crate::settings::Settings,
+) {
     use ui::files::FilesAction::*;
     match action {
         Idle => {}
         Save => {
-            if let Err(e) = session.save_active(trim_ws) {
+            if let Err(e) = session.save_active(settings.trim_whitespace_on_save) {
                 log::error!("save failed: {e}");
                 session.push_notification(
                     crate::session::NotificationKind::Error,
@@ -231,6 +234,24 @@ fn apply_files_action(session: &mut Session, action: ui::files::FilesAction, tri
         DismissNotification(id) => {
             session.notifications.retain(|n| n.id != id);
         }
+        AiGenerate(prompt) => {
+            // Snapshot the active file's name + buffer; the AI task gets
+            // owned copies so the editor can keep being edited while the
+            // model is working.
+            let Some(name) = session.active_file.clone() else { return };
+            let Some(file) = session.files.iter().find(|f| f.name == name) else { return };
+            let contents = file.buffer.clone();
+            session.start_ai_edit(prompt, &name, &contents, settings);
+        }
+        AiApply => {
+            let Some(text) = session.ai.last_result.take() else { return };
+            let Some(name) = session.active_file.clone() else { return };
+            if let Some(file) = session.files.iter_mut().find(|f| f.name == name) {
+                if !file.read_only { file.buffer = text; }
+            }
+        }
+        AiDiscard => { session.ai.last_result = None; }
+        AiResetError => { session.ai.status = crate::session::AiStatus::Idle; }
     }
 }
 

@@ -1,5 +1,6 @@
 mod app;
 mod diff_patch;
+mod ollama;
 mod protocol;
 mod session;
 mod settings;
