@@ -1,15 +1,22 @@
+# Web build artifacts (covers _bin/, _site/, etc.)
 /_*
 /result
 /src/viewer/styles.css.d.ts
+
+# Node
 /node_modules
+
+# Local-only scripts / archives
 /deploy.sh
 desktop.tar.gz
-desktop/target/
-desktop/target/*
 
-desktop/target/debug/samari_catcher_desktop.pdb
-<<<<<<< HEAD
-desktop/target/debug/samari-catcher-desktop.exe
-=======
-desktop/target/debug/samari-catcher-desktop.exe
->>>>>>> e070476 (fuck git man)
+# Rust build output — matches the workspace-root `target/` AND `desktop/target/`.
+# Use forward slashes; git on Windows does not honour `\` as a separator in
+# .gitignore patterns.
+target/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
